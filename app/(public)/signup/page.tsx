@@ -617,7 +617,7 @@ export default function SignUpPage() {
                                                                     passwordStrength === 'medium' ? 'text-yellow-500' :
                                                                         'text-green-500'}`}
                                                             >
-                                                                {passwordStrength?.charAt(0).toUpperCase() + passwordStrength?.slice(1)}
+                                                                {passwordStrength && (passwordStrength.charAt(0).toUpperCase() + passwordStrength.slice(1))}
                                                             </motion.span>
                                                         </div>
 
