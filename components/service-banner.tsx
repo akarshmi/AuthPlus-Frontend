@@ -23,6 +23,7 @@ export function ServiceBanner({
     position = "center",
 }: ServiceBannerProps) {
     const [isVisible, setIsVisible] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
     const [progress, setProgress] = useState(100);
     const [timeLeft, setTimeLeft] = useState(autoDismiss / 1000);
     const [isLoading, setIsLoading] = useState(true);
@@ -30,39 +31,56 @@ export function ServiceBanner({
     const [isHovering, setIsHovering] = useState(false);
 
     const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
     const bannerRef = useRef<HTMLDivElement>(null);
     const startTimeRef = useRef<number>(0);
     const elapsedTimeRef = useRef<number>(0);
 
+    // Handle client-side mounting
     useEffect(() => {
-        // Show banner immediately when component mounts
-        const hasDismissed = sessionStorage.getItem("service-banner-dismissed");
+        setIsMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isMounted) return;
+
+        // Check if banner was dismissed (only on client-side)
+        const hasDismissed = typeof window !== 'undefined'
+            ? sessionStorage.getItem("service-banner-dismissed")
+            : null;
+
         if (!hasDismissed) {
             setIsVisible(true);
             setIsLoading(true);
 
             // Simulate server starting animation
-            const loadingTimer = setTimeout(() => {
+            loadingTimerRef.current = setTimeout(() => {
                 setIsLoading(false);
             }, 2000);
 
             startTimer();
 
             return () => {
-                clearTimeout(loadingTimer);
+                if (loadingTimerRef.current) {
+                    clearTimeout(loadingTimerRef.current);
+                }
                 clearTimer();
             };
         }
-    }, []);
+    }, [isMounted]);
 
     // Separate effect to handle pause/resume
     useEffect(() => {
+        if (!isMounted || !isVisible) return;
+
         if (isPaused || isHovering) {
             clearTimer();
-        } else if (isVisible) {
+        } else {
             startTimer();
         }
-    }, [isPaused, isHovering]);
+
+        return () => clearTimer();
+    }, [isPaused, isHovering, isMounted, isVisible]);
 
     const startTimer = () => {
         clearTimer();
@@ -108,7 +126,7 @@ export function ServiceBanner({
     const handleDismiss = () => {
         clearTimer();
         setIsVisible(false);
-        if (dismissible) {
+        if (dismissible && typeof window !== 'undefined') {
             sessionStorage.setItem("service-banner-dismissed", "true");
         }
     };
@@ -123,7 +141,8 @@ export function ServiceBanner({
         startTimer();
     };
 
-    if (!isVisible) return null;
+    // Don't render anything during SSR or if not mounted
+    if (!isMounted || !isVisible) return null;
 
     const positionClasses = {
         center: "top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2",
@@ -146,7 +165,7 @@ export function ServiceBanner({
             >
                 <Card className="border-gray-800 bg-gradient-to-br from-gray-900 to-black shadow-2xl shadow-blue-500/10 overflow-hidden group hover:shadow-blue-500/20 transition-shadow duration-300">
                     {/* Decorative elements */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 animate-gradient"></div>
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500"></div>
                     <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-500"></div>
                     <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-500"></div>
 
@@ -323,7 +342,12 @@ export function ServiceBanner({
                                                         ? "bg-gray-800/50"
                                                         : "bg-gray-800"
                                                 )}
-                                               
+                                                // indicatorClassName={cn(
+                                                //     "transition-all duration-300",
+                                                //     isTimerPaused
+                                                //         ? "bg-gradient-to-r from-yellow-500 to-orange-500"
+                                                //         : "bg-gradient-to-r from-blue-500 to-purple-500"
+                                                // )}
                                             />
                                         </div>
 

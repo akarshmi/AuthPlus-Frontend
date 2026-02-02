@@ -6,6 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Lock, Mail, Eye, EyeOff, Github, Chrome, User, ArrowLeft, Sun, Moon, CheckCircle, AlertCircle, Sparkles, Shield, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import useAuth from "@/store/authStore"
+import { ServiceBanner } from "@/components/service-banner"
+
+export const dynamic = 'force-dynamic';
 
 const Alert = ({ type, message, onClose }: { type: 'success' | 'error'; message: string; onClose: () => void }) => {
     return (
@@ -61,6 +64,7 @@ export default function SignUpPage() {
     const searchParams = useSearchParams()
     const { register, socialLogin, isAuth } = useAuth()
 
+    const [isMounted, setIsMounted] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const [theme, setTheme] = useState('dark')
     const [formData, setFormData] = useState({
@@ -92,6 +96,11 @@ export default function SignUpPage() {
 
     const returnUrl = searchParams.get('returnUrl') || '/dashboard'
 
+    // Handle client-side mounting
+    useEffect(() => {
+        setIsMounted(true)
+    }, [])
+
     useEffect(() => {
         if (isAuth) {
             router.push(returnUrl)
@@ -99,12 +108,20 @@ export default function SignUpPage() {
     }, [isAuth, router, returnUrl])
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem('theme') || 'dark'
+        if (!isMounted) return
+
+        const savedTheme = typeof window !== 'undefined'
+            ? localStorage.getItem('theme') || 'dark'
+            : 'dark'
         setTheme(savedTheme)
-        document.documentElement.classList.toggle('dark', savedTheme === 'dark')
-    }, [])
+        if (typeof document !== 'undefined') {
+            document.documentElement.classList.toggle('dark', savedTheme === 'dark')
+        }
+    }, [isMounted])
 
     useEffect(() => {
+        if (!isMounted) return
+
         const handleMouseMove = (e: MouseEvent) => {
             if (typeof window !== 'undefined') {
                 const x = (e.clientX / window.innerWidth - 0.5) * 10
@@ -118,13 +135,17 @@ export default function SignUpPage() {
             window.addEventListener('mousemove', handleMouseMove)
             return () => window.removeEventListener('mousemove', handleMouseMove)
         }
-    }, [])
+    }, [isMounted])
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light'
         setTheme(newTheme)
-        localStorage.setItem('theme', newTheme)
-        document.documentElement.classList.toggle('dark', newTheme === 'dark')
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('theme', newTheme)
+        }
+        if (typeof document !== 'undefined') {
+            document.documentElement.classList.toggle('dark', newTheme === 'dark')
+        }
     }
 
     const validateEmail = (email: string): boolean => {
@@ -294,8 +315,20 @@ export default function SignUpPage() {
         { key: 'special', label: 'One special character', met: passwordChecks.special },
     ]
 
+    // Don't render anything until mounted on client
+    if (!isMounted) {
+        return null
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-center px-6 py-10 transition-colors overflow-hidden relative">
+            {/* Service Banner */}
+            <ServiceBanner
+                dismissible={true}
+                autoDismiss={8000}
+                position="center"
+            />
+
             <AnimatePresence>
                 {alert && (
                     <Alert
