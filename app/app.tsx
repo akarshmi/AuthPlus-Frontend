@@ -570,11 +570,11 @@ const EnterpriseSection = () => {
                             viewport={{ once: true }}
                             transition={{ delay: 0.2 }}
                         >
-                            <ServiceStatusCard
+                            {/* <ServiceStatusCard
                                 variant="compact"
                                 className="max-w-md"
                                 showCloseButton={false}
-                            />
+                            /> */}
                         </motion.div>
 
                         <motion.div
