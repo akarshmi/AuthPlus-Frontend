@@ -323,7 +323,7 @@ export default function Dashboard() {
                         </Avatar>
                         <div>
                             <h3 className="font-semibold">{user?.name || 'User'}</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{user?.role || 'Admin'}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{user?.roles || 'Admin'}</p>
                         </div>
                     </div>
                 </div>
@@ -431,15 +431,15 @@ export default function Dashboard() {
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="flex items-center gap-3 px-3 py-2">
-                                    <Avatar className="w-8 h-8">
-                                        <AvatarImage src={user?.image} />
-                                        <AvatarFallback>
+                                    <Avatar className="w-12 h-12 border-2 border-white shadow-lg">
+                                        <AvatarImage src={user?.image || undefined} />
+                                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white">
                                             {user?.name?.charAt(0) || 'U'}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="hidden md:block text-left">
                                         <p className="text-sm font-medium">{user?.name || 'User'}</p>
-                                        <p className="text-xs text-gray-500">{user?.role || 'Admin'}</p>
+                                        <p className="text-xs text-gray-500">{user?.roles || 'Admin'}</p>
                                     </div>
                                     <ChevronDown className="w-4 h-4" />
                                 </Button>
