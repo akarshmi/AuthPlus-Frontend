@@ -10,11 +10,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { ServiceStatusCard } from "@/components/service-status-card"; 
+import { ServiceStatusCard } from "@/components/service-status-card";
 import { ArrowUpRight } from 'lucide-react';
 
+interface NavbarProps {
+    theme: string; // or 'light' | 'dark'
+    toggleTheme: () => void;
+}
 
-const Navbar = ({ theme, toggleTheme }) => {
+const Navbar: React.FC<NavbarProps> = ({ theme, toggleTheme }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [activeLink, setActiveLink] = useState('');
@@ -48,7 +52,7 @@ const Navbar = ({ theme, toggleTheme }) => {
         { name: 'Docs', href: '/docs', icon: FileText }
     ];
 
-    const scrollToSection = (href) => {
+    const scrollToSection = (href: string) => {
         const id = href.replace('#', '');
         const element = document.getElementById(id);
         if (element) {
@@ -770,7 +774,7 @@ const CTASection = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [hasSubmitted, setHasSubmitted] = useState(false);
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: { preventDefault: () => void; }) => {
         e.preventDefault();
         if (!email || isSubmitting) return;
 
