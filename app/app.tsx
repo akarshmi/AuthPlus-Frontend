@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { ServiceStatusCard } from "@/components/service-status-card";
+// import { ServiceStatusCard } from "@/components/service-status-";
 import { ArrowUpRight } from 'lucide-react';
 
 interface NavbarProps {
