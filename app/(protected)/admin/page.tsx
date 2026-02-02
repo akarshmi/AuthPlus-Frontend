@@ -316,7 +316,7 @@ export default function Dashboard() {
                 <div className="p-6 border-b border-gray-200 dark:border-white/10">
                     <div className="flex items-center gap-3">
                         <Avatar className="w-12 h-12 border-2 border-white shadow-lg">
-                            <AvatarImage src={user?.image} />
+                            <AvatarImage src={user?.image || undefined} />
                             <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white">
                                 {user?.name?.charAt(0) || 'U'}
                             </AvatarFallback>
