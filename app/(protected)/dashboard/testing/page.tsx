@@ -188,7 +188,7 @@ export default function SecurityTestingDashboard() {
 
     // Load JWT from cookie on mount
     useEffect(() => {
-        const accessToken = getCookie('accessToken');
+        const accessToken = getCookie('refreshToken');
         if (accessToken) {
             setJwtToken(accessToken);
             setUsingCookie(true);
