@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import useAuth from "@/store/authStore"
 import { ServiceBanner } from "@/components/service-banner";
 // import ServiceStatusBanner from "@/components/service-status-banner";
+export const dynamic = 'force-dynamic';
 
 const Alert = ({ type, message, onClose }: { type: 'success' | 'error'; message: string; onClose: () => void }) => {
     return (
