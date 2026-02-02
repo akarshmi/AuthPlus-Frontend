@@ -100,10 +100,10 @@ export function Sidebar() {
         setIsClient(true);
 
         const handleScroll = () => {
-            const sections = document.querySelectorAll('section[id]');
+            const sectionNodes = document.querySelectorAll('section[id]');
             const scrollPos = window.scrollY + 100;
 
-            sections.forEach((section) => {
+            Array.from(sectionNodes).forEach((section) => {
                 const sectionTop = (section as HTMLElement).offsetTop;
                 const sectionHeight = (section as HTMLElement).offsetHeight;
                 const sectionId = section.getAttribute('id');
@@ -112,7 +112,7 @@ export function Sidebar() {
                     setActiveSection(`#${sectionId}`);
 
                     // Auto-expand the parent section
-                    const parentSection = sections.find(s =>
+                    const parentSection = sections.find((s) =>
                         s.href === `#${sectionId}` ||
                         s.subsections?.some(sub => sub.href === `#${sectionId}`)
                     );
@@ -184,14 +184,14 @@ export function Sidebar() {
                                     scrollToSection(section.href);
                                 }}
                                 className={`w-full flex items-center justify-between p-3 rounded-lg transition-all duration-200 ${sectionActive
-                                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                                        : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
                                     }`}
                             >
                                 <div className="flex items-center space-x-3">
                                     <Icon className={`w-4 h-4 ${sectionActive
-                                            ? 'text-blue-600 dark:text-blue-400'
-                                            : 'text-gray-500 dark:text-gray-400'
+                                        ? 'text-blue-600 dark:text-blue-400'
+                                        : 'text-gray-500 dark:text-gray-400'
                                         }`} />
                                     <span className="text-sm font-medium">
                                         {section.title}
@@ -221,8 +221,8 @@ export function Sidebar() {
                                                 key={subsection.title}
                                                 onClick={() => scrollToSection(subsection.href)}
                                                 className={`w-full text-left py-2 px-3 text-sm rounded transition-all duration-200 ${subsectionActive
-                                                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                                                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                                                     }`}
                                             >
                                                 {subsection.title}
