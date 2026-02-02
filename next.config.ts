@@ -14,7 +14,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' http://localhost:8080",
+              "connect-src 'self' https://authplus-backend.onrender.com",
               "frame-ancestors 'none'"
             ].join('; ')
           },
