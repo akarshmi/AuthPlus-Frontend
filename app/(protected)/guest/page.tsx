@@ -129,7 +129,7 @@ export default function SimpleDashboard() {
                 <div className="p-6 border-b border-gray-200 dark:border-white/10">
                     <div className="flex items-center gap-3">
                         <Avatar className="w-10 h-10">
-                            <AvatarImage src={user?.image} />
+                            <AvatarImage src={user?.image || undefined} />
                             <AvatarFallback className="bg-blue-500 text-white">
                                 {user?.name?.charAt(0) || 'U'}
                             </AvatarFallback>
@@ -203,9 +203,9 @@ export default function SimpleDashboard() {
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <button className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-100 dark:hover:bg-white/10">
-                                    <Avatar className="w-8 h-8">
-                                        <AvatarImage src={user?.image} />
-                                        <AvatarFallback>
+                                    <Avatar className="w-10 h-10">
+                                        <AvatarImage src={user?.image || undefined} />
+                                        <AvatarFallback className="bg-blue-500 text-white">
                                             {user?.name?.charAt(0) || 'U'}
                                         </AvatarFallback>
                                     </Avatar>
