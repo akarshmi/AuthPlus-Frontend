@@ -68,7 +68,7 @@ const parseJWT = (token: string) => {
             payload: {},
             signature: '',
             isValid: false,
-            error: error.message,
+            error: error instanceof Error ? error.message : 'Unknown error',
         };
     }
 };
@@ -229,11 +229,12 @@ export default function SecurityTestingDashboard() {
             setTestResults(prev => [result, ...prev]);
             toast.success(`API responded with ${response.status}`);
         } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             const result = {
                 id: Date.now(),
                 name: 'API Endpoint Test',
                 status: 'error',
-                details: `❌ Network error: ${error.message}`,
+                details: `❌ Network error: ${errorMessage}`,
                 time: Date.now() - startTime,
                 timestamp: new Date().toLocaleTimeString(),
             };
