@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Lock, Mail, Eye, EyeOff, Github, Chrome, ArrowLeft, Sun, Moon, CheckCircle, AlertCircle, Sparkles, Fingerprint, Shield } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import useAuth from "@/store/authStore"
-import { ServiceBanner } from "@/components/service-banner"
+// import { ServiceBanner } from "@/components/service-banner"
 
 export const dynamic = 'force-dynamic';
 
@@ -235,13 +235,13 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-center px-6 py-10 transition-colors overflow-hidden relative">
             {/* Service Banner - only shows if not dismissed */}
-            {showServiceBanner && (
+            {/* {showServiceBanner && (
                 <ServiceBanner
                     dismissible={true}
                     autoDismiss={8000}
                     position="center"
                 />
-            )}
+            )} */}
 
             <AnimatePresence>
                 {alert && (
