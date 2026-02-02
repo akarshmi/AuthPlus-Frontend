@@ -321,11 +321,7 @@ export default function SignUpClient() {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-center px-6 py-10 transition-colors overflow-hidden relative">
-            dismissible={true}
-            autoDismiss={8000}
-            position="center"
-            /{'>'}
-
+        
             <AnimatePresence>
                 {alert && (
                     <Alert
