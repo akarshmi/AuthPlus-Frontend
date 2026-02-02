@@ -323,12 +323,7 @@ export function ServiceBanner({
                                                         ? "bg-gray-800/50"
                                                         : "bg-gray-800"
                                                 )}
-                                                indicatorClassName={cn(
-                                                    "transition-all duration-300",
-                                                    isTimerPaused
-                                                        ? "bg-gradient-to-r from-yellow-500 to-orange-500"
-                                                        : "bg-gradient-to-r from-blue-500 to-purple-500"
-                                                )}
+                                               
                                             />
                                         </div>
 
