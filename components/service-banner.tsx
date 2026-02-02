@@ -41,6 +41,7 @@ export function ServiceBanner({
         setIsMounted(true);
     }, []);
 
+    // Initialize banner visibility and loading state
     useEffect(() => {
         if (!isMounted) return;
 
@@ -57,21 +58,55 @@ export function ServiceBanner({
             loadingTimerRef.current = setTimeout(() => {
                 setIsLoading(false);
             }, 2000);
-
-            startTimer();
-
-            return () => {
-                if (loadingTimerRef.current) {
-                    clearTimeout(loadingTimerRef.current);
-                }
-                clearTimer();
-            };
         }
+
+        return () => {
+            if (loadingTimerRef.current) {
+                clearTimeout(loadingTimerRef.current);
+            }
+        };
     }, [isMounted]);
 
     // Separate effect to handle pause/resume
     useEffect(() => {
         if (!isMounted || !isVisible) return;
+
+        const startTimer = () => {
+            clearTimer();
+
+            const totalTime = autoDismiss;
+            const interval = 50; // update every 50ms for smoother animation
+            startTimeRef.current = Date.now() - elapsedTimeRef.current;
+
+            progressTimerRef.current = setInterval(() => {
+                const currentElapsed = Date.now() - startTimeRef.current;
+                elapsedTimeRef.current = currentElapsed;
+
+                const newProgress = Math.max(0, 100 - (currentElapsed / totalTime) * 100);
+                setProgress(newProgress);
+                setTimeLeft(Math.ceil((newProgress / 100) * (autoDismiss / 1000)));
+
+                if (newProgress <= 0) {
+                    clearTimer();
+                    handleDismiss();
+                }
+            }, interval);
+        };
+
+        const clearTimer = () => {
+            if (progressTimerRef.current) {
+                clearInterval(progressTimerRef.current);
+                progressTimerRef.current = null;
+            }
+        };
+
+        const handleDismiss = () => {
+            clearTimer();
+            setIsVisible(false);
+            if (dismissible && typeof window !== 'undefined') {
+                sessionStorage.setItem("service-banner-dismissed", "true");
+            }
+        };
 
         if (isPaused || isHovering) {
             clearTimer();
@@ -80,36 +115,7 @@ export function ServiceBanner({
         }
 
         return () => clearTimer();
-    }, [isPaused, isHovering, isMounted, isVisible]);
-
-    const startTimer = () => {
-        clearTimer();
-
-        const totalTime = autoDismiss;
-        const interval = 50; // update every 50ms for smoother animation
-        startTimeRef.current = Date.now() - elapsedTimeRef.current;
-
-        progressTimerRef.current = setInterval(() => {
-            const currentElapsed = Date.now() - startTimeRef.current;
-            elapsedTimeRef.current = currentElapsed;
-
-            const newProgress = Math.max(0, 100 - (currentElapsed / totalTime) * 100);
-            setProgress(newProgress);
-            setTimeLeft(Math.ceil((newProgress / 100) * (autoDismiss / 1000)));
-
-            if (newProgress <= 0) {
-                clearTimer();
-                handleDismiss();
-            }
-        }, interval);
-    };
-
-    const clearTimer = () => {
-        if (progressTimerRef.current) {
-            clearInterval(progressTimerRef.current);
-            progressTimerRef.current = null;
-        }
-    };
+    }, [isPaused, isHovering, isMounted, isVisible, autoDismiss, dismissible]);
 
     const handleMouseEnter = () => {
         setIsHovering(true);
@@ -124,7 +130,10 @@ export function ServiceBanner({
     };
 
     const handleDismiss = () => {
-        clearTimer();
+        if (progressTimerRef.current) {
+            clearInterval(progressTimerRef.current);
+            progressTimerRef.current = null;
+        }
         setIsVisible(false);
         if (dismissible && typeof window !== 'undefined') {
             sessionStorage.setItem("service-banner-dismissed", "true");
@@ -132,13 +141,15 @@ export function ServiceBanner({
     };
 
     const resetTimer = () => {
-        clearTimer();
+        if (progressTimerRef.current) {
+            clearInterval(progressTimerRef.current);
+            progressTimerRef.current = null;
+        }
         elapsedTimeRef.current = 0;
         setProgress(100);
         setTimeLeft(autoDismiss / 1000);
         setIsPaused(false);
         setIsHovering(false);
-        startTimer();
     };
 
     // Don't render anything during SSR or if not mounted
