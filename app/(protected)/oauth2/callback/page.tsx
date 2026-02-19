@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { jwtDecode } from "jwt-decode"
 import useAuth from "@/store/authStore"
 
-export default function OAuth2CallbackPage() {
+function OAuth2CallbackContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
 
@@ -16,7 +16,6 @@ export default function OAuth2CallbackPage() {
                 const token = searchParams.get('token')
 
                 if (token) {
-                    // Token passed in URL from Spring Boot redirect
                     useAuth.setState({
                         token,
                         isAuth: true,
@@ -24,12 +23,9 @@ export default function OAuth2CallbackPage() {
                         loading: false,
                         refreshError: false
                     })
-
-                    // Fetch full user profile
                     await useAuth.getState().fetchProfile()
                     router.replace(returnUrl)
                 } else {
-                    // No token in URL — try cookie fallback
                     await useAuth.getState().refresh()
                     router.replace(returnUrl)
                 }
@@ -55,5 +51,17 @@ export default function OAuth2CallbackPage() {
                 <p className="text-sm text-gray-600 dark:text-gray-400">Completing sign in...</p>
             </div>
         </div>
+    )
+}
+
+export default function OAuth2CallbackPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-[#0a0a0a]">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-gray-900 dark:border-white/20 dark:border-t-white" />
+            </div>
+        }>
+            <OAuth2CallbackContent />
+        </Suspense>
     )
 }
