@@ -38,7 +38,7 @@ function OAuth2CallbackContent() {
                         }
                     })
 
-                    // ✅ Now fetch full profile with the token already in state
+                    // ✅ Now fetch full profile with token already in state
                     try {
                         await useAuth.getState().fetchProfile()
                     } catch (e) {
@@ -48,6 +48,7 @@ function OAuth2CallbackContent() {
 
                     router.replace(returnUrl)
                 } else {
+                    // No token in URL — try cookie fallback
                     await useAuth.getState().refresh()
                     router.replace(returnUrl)
                 }
