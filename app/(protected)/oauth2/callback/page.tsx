@@ -2,6 +2,7 @@
 
 import { useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { jwtDecode } from "jwt-decode"
 import useAuth from "@/store/authStore"
 
 export default function OAuth2CallbackPage() {
@@ -12,12 +13,26 @@ export default function OAuth2CallbackPage() {
         const handleCallback = async () => {
             try {
                 const returnUrl = searchParams.get('returnUrl') || '/dashboard'
+                const token = searchParams.get('token')
 
-                // Spring Boot already set the httpOnly refresh cookie.
-                // Just call refresh() to get an access token from it.
-                await useAuth.getState().refresh()
+                if (token) {
+                    // Token passed in URL from Spring Boot redirect
+                    useAuth.setState({
+                        token,
+                        isAuth: true,
+                        loggedOut: false,
+                        loading: false,
+                        refreshError: false
+                    })
 
-                router.replace(returnUrl)
+                    // Fetch full user profile
+                    await useAuth.getState().fetchProfile()
+                    router.replace(returnUrl)
+                } else {
+                    // No token in URL — try cookie fallback
+                    await useAuth.getState().refresh()
+                    router.replace(returnUrl)
+                }
             } catch (error) {
                 console.error("OAuth2 callback failed:", error)
                 router.replace('/login?error=oauth_failed')
