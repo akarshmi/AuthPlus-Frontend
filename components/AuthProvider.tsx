@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, ReactNode, useRef } from "react"
+import { useEffect, ReactNode } from "react"
 import useAuth from "../store/authStore"
 
 interface Props {
@@ -8,16 +8,14 @@ interface Props {
 }
 
 export default function AuthProvider({ children }: Props) {
-    
-    const refresh = useAuth(state => state.refresh);
-    const loggedOut = useAuth(state => state.loggedOut);
+    const initAuth = useAuth(state => state.initAuth)
+    const loggedOut = useAuth(state => state.loggedOut)
 
     useEffect(() => {
         if (!loggedOut) {
-            refresh();
+            initAuth() // initAuth already handles the "should I refresh?" logic
         }
-    }, [refresh, loggedOut]);
-
+    }, []) // ← empty deps, run once only
 
     return <>{children}</>
 }

@@ -155,45 +155,40 @@ const useAuth = create<AuthState>((set, get) => ({
      * Initialize auth on app startup
      */
     initAuth: async () => {
-        const { token, loggedOut } = get()
+        const { token, loggedOut, shouldRefreshToken, isTokenExpired } = get()
 
-        // Skip if already logged out
         if (loggedOut) {
             set({ loading: false })
             return
         }
 
-        // No token in state, try to refresh from httpOnly cookie
-        if (!token) {
+        // Token exists and is still valid — no need to refresh
+        if (token && !isTokenExpired()) {
+            set({ loading: false })
+            return
+        }
+
+        // Token exists but expiring soon — refresh proactively
+        if (token && shouldRefreshToken()) {
             try {
                 await get().refresh()
-            } catch (error) {
-                // No valid refresh token
-                set({
-                    loading: false,
-                    isAuth: false,
-                    user: null
-                })
+            } catch {
+                set({ loading: false, isAuth: false, user: null, token: null })
             }
             return
         }
 
-        // Token exists, check if valid
-        if (get().isTokenExpired()) {
+        // No token — try refresh from httpOnly cookie (covers page reload case)
+        if (!token) {
             try {
                 await get().refresh()
-            } catch (error) {
-                set({
-                    loading: false,
-                    isAuth: false,
-                    user: null,
-                    token: null
-                })
+            } catch {
+                set({ loading: false, isAuth: false, user: null })
             }
-        } else {
-            // Token is still valid
-            set({ loading: false })
+            return
         }
+
+        set({ loading: false })
     },
 
     // ---------------- REGISTRATION ----------------
