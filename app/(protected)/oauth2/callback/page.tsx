@@ -16,24 +16,34 @@ function OAuth2CallbackContent() {
                 const token = searchParams.get('token')
 
                 if (token) {
-                    // Decode basic info from token immediately
                     const decoded: any = jwtDecode(token)
 
-                    // Set token in store first
+                    // ✅ Set token AND basic user data from token immediately
                     useAuth.setState({
                         token,
                         isAuth: true,
                         loggedOut: false,
                         loading: false,
-                        refreshError: false
+                        refreshError: false,
+                        user: {
+                            userId: decoded.sub,
+                            email: decoded.email,
+                            name: decoded.email, // fallback until profile loads
+                            roles: decoded.roles || [],
+                            enabled: true,
+                            image: null,
+                            provider: '',
+                            createdAt: '',
+                            updatedAt: ''
+                        }
                     })
 
-                    // Fetch full profile — token is now in store so axios interceptor will use it
+                    // ✅ Now fetch full profile with the token already in state
                     try {
                         await useAuth.getState().fetchProfile()
-                    } catch (profileError) {
-                        console.error("Profile fetch failed:", profileError)
-                        // Still proceed — user is authenticated, profile can load later
+                    } catch (e) {
+                        console.error("Profile fetch failed, using token data:", e)
+                        // User still has basic data from token — don't block login
                     }
 
                     router.replace(returnUrl)
