@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { jwtDecode } from "jwt-decode"
 import useAuth from "@/store/authStore"
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8080"
+
 function OAuth2CallbackContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -15,20 +17,69 @@ function OAuth2CallbackContent() {
                 const returnUrl = searchParams.get('returnUrl') || '/dashboard'
                 const token = searchParams.get('token')
 
-                if (token) {
-                    const decoded: any = jwtDecode(token)
+                if (!token) {
+                    // No token — try cookie fallback
+                    await useAuth.getState().refresh()
+                    router.replace(returnUrl)
+                    return
+                }
 
-                    // ✅ Set token AND basic user data from token immediately
+                const decoded: any = jwtDecode(token)
+                console.log("Decoded token:", decoded)
+
+                // ✅ Set token in state first
+                useAuth.setState({
+                    token,
+                    isAuth: true,
+                    loggedOut: false,
+                    loading: false,
+                    refreshError: false,
+                })
+
+                // ✅ Fetch profile using native fetch (bypasses axios interceptor issues)
+                try {
+                    const profileRes = await fetch(`${BASE_URL}/api/v1/users/me`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    })
+
+                    console.log("Profile response status:", profileRes.status)
+
+                    if (profileRes.ok) {
+                        const userData = await profileRes.json()
+                        console.log("User data:", userData)
+                        useAuth.setState({ user: userData })
+                    } else {
+                        const errData = await profileRes.json()
+                        console.error("Profile fetch error:", errData)
+
+                        // Fallback: set basic user info from token
+                        useAuth.setState({
+                            user: {
+                                userId: decoded.sub,
+                                email: decoded.email,
+                                name: decoded.email,
+                                roles: decoded.roles || [],
+                                enabled: true,
+                                image: null,
+                                provider: '',
+                                createdAt: '',
+                                updatedAt: ''
+                            }
+                        })
+                    }
+                } catch (fetchErr) {
+                    console.error("Profile fetch threw:", fetchErr)
+                    // Fallback to token data
                     useAuth.setState({
-                        token,
-                        isAuth: true,
-                        loggedOut: false,
-                        loading: false,
-                        refreshError: false,
                         user: {
                             userId: decoded.sub,
                             email: decoded.email,
-                            name: decoded.email, // fallback until profile loads
+                            name: decoded.email,
                             roles: decoded.roles || [],
                             enabled: true,
                             image: null,
@@ -37,21 +88,10 @@ function OAuth2CallbackContent() {
                             updatedAt: ''
                         }
                     })
-
-                    // ✅ Now fetch full profile with token already in state
-                    try {
-                        await useAuth.getState().fetchProfile()
-                    } catch (e) {
-                        console.error("Profile fetch failed, using token data:", e)
-                        // User still has basic data from token — don't block login
-                    }
-
-                    router.replace(returnUrl)
-                } else {
-                    // No token in URL — try cookie fallback
-                    await useAuth.getState().refresh()
-                    router.replace(returnUrl)
                 }
+
+                router.replace(returnUrl)
+
             } catch (error) {
                 console.error("OAuth2 callback failed:", error)
                 router.replace('/login?error=oauth_failed')
