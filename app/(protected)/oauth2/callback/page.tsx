@@ -16,6 +16,10 @@ function OAuth2CallbackContent() {
                 const token = searchParams.get('token')
 
                 if (token) {
+                    // Decode basic info from token immediately
+                    const decoded: any = jwtDecode(token)
+
+                    // Set token in store first
                     useAuth.setState({
                         token,
                         isAuth: true,
@@ -23,7 +27,15 @@ function OAuth2CallbackContent() {
                         loading: false,
                         refreshError: false
                     })
-                    await useAuth.getState().fetchProfile()
+
+                    // Fetch full profile — token is now in store so axios interceptor will use it
+                    try {
+                        await useAuth.getState().fetchProfile()
+                    } catch (profileError) {
+                        console.error("Profile fetch failed:", profileError)
+                        // Still proceed — user is authenticated, profile can load later
+                    }
+
                     router.replace(returnUrl)
                 } else {
                     await useAuth.getState().refresh()

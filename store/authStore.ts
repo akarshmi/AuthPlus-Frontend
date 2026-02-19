@@ -5,8 +5,7 @@ import { jwtDecode } from "jwt-decode"
 import api from "@/lib/axios"
 import rawApi from "@/lib/rawApi"
 
-// Token will refresh if expiring within 5 minutes
-const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000 // in ms 
+const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000 // 5 minutes in ms
 
 export interface User {
     userId: string
@@ -24,6 +23,8 @@ interface DecodedToken {
     exp: number
     iat: number
     sub: string
+    email?: string
+    roles?: string[]
 }
 
 interface UpdateProfileData {
@@ -41,7 +42,6 @@ interface AuthState {
     refreshing: boolean
     refreshError?: boolean
 
-    // Methods
     register: (data: { email: string; password: string; name: string }) => Promise<any>
     login: (data: { email: string; password: string }) => Promise<any>
     updateProfile: (updateData: UpdateProfileData) => Promise<any>
@@ -66,66 +66,44 @@ const useAuth = create<AuthState>((set, get) => ({
 
     // ---------------- HELPERS ----------------
 
-    /**
-     * Check if current token is expired
-     */
     isTokenExpired: () => {
         const { token } = get()
         if (!token) return true
-
         try {
             const decoded: DecodedToken = jwtDecode(token)
-            const now = Date.now()
-            const expiration = decoded.exp * 1000 // Convert to ms
-
-            return now >= expiration
-        } catch (error) {
-            console.error("Error decoding token:", error)
+            return Date.now() >= decoded.exp * 1000
+        } catch {
             return true
         }
     },
 
-    /**
-     * Check if token should be refreshed (expired or expiring soon)
-     */
     shouldRefreshToken: () => {
         const { token, refreshError } = get()
         if (!token) return false
-        if (refreshError) return false // Don't try to refresh if it just failed
-
+        if (refreshError) return false
         try {
             const decoded: DecodedToken = jwtDecode(token)
-            const now = Date.now()
-            const expiration = decoded.exp * 1000
-            const timeUntilExpiry = expiration - now
-
-            // Refresh if expired or expiring within threshold
+            const timeUntilExpiry = decoded.exp * 1000 - Date.now()
             return timeUntilExpiry <= TOKEN_REFRESH_THRESHOLD
-        } catch (error) {
-            console.error("Error decoding token:", error)
+        } catch {
             return true
         }
     },
 
-    /**
-     * Ensure token is valid, refresh if needed
-     */
     ensureValidToken: async () => {
         const { shouldRefreshToken, refresh, loggedOut, refreshing, refreshError } = get()
 
         if (loggedOut) return
+
+        // Wait for ongoing refresh
         if (refreshing) {
-            // Wait for ongoing refresh to complete
             return new Promise<void>((resolve) => {
                 const checkInterval = setInterval(() => {
-                    const state = get()
-                    if (!state.refreshing) {
+                    if (!get().refreshing) {
                         clearInterval(checkInterval)
                         resolve()
                     }
                 }, 100)
-
-                // Timeout after 10 seconds
                 setTimeout(() => {
                     clearInterval(checkInterval)
                     resolve()
@@ -134,10 +112,7 @@ const useAuth = create<AuthState>((set, get) => ({
         }
 
         if (refreshError) {
-            // Clear refresh error after some time
-            setTimeout(() => {
-                set({ refreshError: false })
-            }, 5000)
+            setTimeout(() => set({ refreshError: false }), 5000)
             return
         }
 
@@ -146,23 +121,19 @@ const useAuth = create<AuthState>((set, get) => ({
                 await refresh()
             } catch (error) {
                 console.error("Token refresh failed in ensureValidToken:", error)
-                // Don't throw error here, let the API call handle it
             }
         }
     },
 
-    /**
-     * Initialize auth on app startup
-     */
     initAuth: async () => {
-        const { token, loggedOut, shouldRefreshToken, isTokenExpired } = get()
+        const { token, loggedOut, isTokenExpired, shouldRefreshToken } = get()
 
         if (loggedOut) {
             set({ loading: false })
             return
         }
 
-        // Token exists and is still valid — no need to refresh
+        // Token exists and is still valid — no refresh needed
         if (token && !isTokenExpired()) {
             set({ loading: false })
             return
@@ -178,7 +149,7 @@ const useAuth = create<AuthState>((set, get) => ({
             return
         }
 
-        // No token — try refresh from httpOnly cookie (covers page reload case)
+        // No token — try to get one from httpOnly cookie
         if (!token) {
             try {
                 await get().refresh()
@@ -191,15 +162,10 @@ const useAuth = create<AuthState>((set, get) => ({
         set({ loading: false })
     },
 
-    // ---------------- REGISTRATION ----------------
-    register: async (data: {
-        email: string
-        password: string
-        name: string
-    }) => {
+    // ---------------- REGISTER ----------------
+    register: async (data) => {
         try {
             const res = await rawApi.post("/auth/register", data)
-
             if (res.data.accessToken) {
                 set({
                     token: res.data.accessToken,
@@ -209,7 +175,6 @@ const useAuth = create<AuthState>((set, get) => ({
                     refreshError: false
                 })
             }
-
             return res.data
         } catch (error) {
             throw error
@@ -217,10 +182,9 @@ const useAuth = create<AuthState>((set, get) => ({
     },
 
     // ---------------- LOGIN ----------------
-    login: async (credentials: { email: string; password: string }) => {
+    login: async (credentials) => {
         try {
             const res = await rawApi.post("/auth/login", credentials)
-
             set({
                 token: res.data.accessToken,
                 user: res.data.user,
@@ -229,7 +193,6 @@ const useAuth = create<AuthState>((set, get) => ({
                 loading: false,
                 refreshError: false
             })
-
             return res.data
         } catch (error) {
             throw error
@@ -240,27 +203,18 @@ const useAuth = create<AuthState>((set, get) => ({
     refresh: async () => {
         const { loggedOut, refreshing } = get()
 
-        if (loggedOut) {
-            throw new Error("User is logged out")
-        }
+        if (loggedOut) throw new Error("User is logged out")
 
-        // 🔒 Prevent concurrent refresh calls
+        // Prevent concurrent refresh calls
         if (refreshing) {
-            // Wait for ongoing refresh
             return new Promise<string | undefined>((resolve, reject) => {
                 const checkInterval = setInterval(() => {
                     const state = get()
                     if (!state.refreshing) {
                         clearInterval(checkInterval)
-                        if (state.token) {
-                            resolve(state.token)
-                        } else {
-                            reject(new Error("Refresh failed"))
-                        }
+                        state.token ? resolve(state.token) : reject(new Error("Refresh failed"))
                     }
                 }, 100)
-
-                // Timeout after 10 seconds
                 setTimeout(() => {
                     clearInterval(checkInterval)
                     reject(new Error("Refresh timeout"))
@@ -272,7 +226,6 @@ const useAuth = create<AuthState>((set, get) => ({
 
         try {
             const res = await rawApi.post("/auth/refresh")
-
             set({
                 token: res.data.accessToken,
                 user: res.data.user,
@@ -282,16 +235,13 @@ const useAuth = create<AuthState>((set, get) => ({
                 refreshing: false,
                 refreshError: false
             })
-
             return res.data.accessToken
         } catch (error: any) {
             console.error("Refresh token error:", error)
 
-            // Check if it's a 400 or 401 error (invalid/expired refresh token)
             const isAuthError = error.response?.status === 400 || error.response?.status === 401
 
             if (isAuthError) {
-                // Refresh token expired or invalid - clear everything
                 set({
                     token: null,
                     user: null,
@@ -302,11 +252,7 @@ const useAuth = create<AuthState>((set, get) => ({
                     refreshError: true
                 })
             } else {
-                // Other errors (network, server) - don't logout immediately
-                set({
-                    refreshing: false,
-                    refreshError: true
-                })
+                set({ refreshing: false, refreshError: true })
             }
 
             throw error
@@ -335,27 +281,23 @@ const useAuth = create<AuthState>((set, get) => ({
     // ---------------- SOCIAL LOGIN ----------------
     socialLogin: async (provider: string) => {
         provider = provider.toLowerCase()
-        window.location.href = `${process.env.NEXT_PUBLIC_BASE_URL}/oauth2/authorization/${provider}`;
+        window.location.href = `${process.env.NEXT_PUBLIC_BASE_URL}/oauth2/authorization/${provider}`
     },
 
     // ---------------- FETCH PROFILE ----------------
     fetchProfile: async () => {
         set({ loadingProfile: true, profileError: null })
-
         try {
             const res = await api.get("/users/me")
-
             set({
                 user: res.data,
                 loadingProfile: false,
                 profileError: null
             })
-
             return res.data
         } catch (error: any) {
             console.error("Error fetching profile:", error)
 
-            // Check if it's an authentication error
             if (error.response?.status === 401) {
                 set({
                     user: null,
@@ -365,7 +307,6 @@ const useAuth = create<AuthState>((set, get) => ({
                     token: null,
                     loggedOut: true
                 })
-
                 throw new Error("Session expired. Please log in again.")
             }
 
@@ -373,29 +314,24 @@ const useAuth = create<AuthState>((set, get) => ({
                 loadingProfile: false,
                 profileError: error.response?.data?.message || "Failed to load profile"
             })
-
             throw error
         }
     },
 
     // ---------------- UPDATE PROFILE ----------------
-    updateProfile: async (updateData: UpdateProfileData) => {
+    updateProfile: async (updateData) => {
         set({ loadingProfile: true, profileError: null })
-
         try {
             const res = await api.put('/users/me', updateData)
-
             set({
                 user: res.data,
                 loadingProfile: false,
                 profileError: null
             })
-
             return res.data
         } catch (error: any) {
             console.error("Error updating profile:", error)
 
-            // Enhanced error messages
             let errorMessage = "Failed to update profile"
 
             if (error.response) {
@@ -405,12 +341,7 @@ const useAuth = create<AuthState>((set, get) => ({
                         break
                     case 401:
                         errorMessage = "Session expired"
-                        set({
-                            isAuth: false,
-                            token: null,
-                            user: null,
-                            loggedOut: true
-                        })
+                        set({ isAuth: false, token: null, user: null, loggedOut: true })
                         break
                     case 409:
                         errorMessage = "Email already in use"
@@ -425,20 +356,15 @@ const useAuth = create<AuthState>((set, get) => ({
                 errorMessage = "Network error. Please check your connection."
             }
 
-            set({
-                loadingProfile: false,
-                profileError: errorMessage
-            })
+            set({ loadingProfile: false, profileError: errorMessage })
 
-            // Create enhanced error object
-            const enhancedError = new Error(errorMessage)
-                ; (enhancedError as any).response = error.response
-                ; (enhancedError as any).request = error.request
+            const enhancedError = new Error(errorMessage);
+            (enhancedError as any).response = error.response;
+            (enhancedError as any).request = error.request
 
             throw enhancedError
         }
     }
-
 }))
 
 export default useAuth
