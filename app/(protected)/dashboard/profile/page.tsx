@@ -503,7 +503,17 @@ export default function DashboardProfilePage() {
                                 </div>
                                 <div className="flex items-center gap-3 text-sm">
                                     <Shield className="w-4 h-4 text-gray-400" />
-                                    <span>{user.roles?.length ? user.roles.join(', ') : 'No roles assigned'}</span>
+                                    <span>
+                                        {user?.roles?.length
+                                            ? user.roles
+                                                .map((role: { name?: string } | string) =>
+                                                    (typeof role === 'string' ? role : role.name ?? '')
+                                                        .replace(/^ROLE_/, '')
+                                                )
+                                                .filter(Boolean)
+                                                .join(', ')
+                                            : 'No roles assigned'}
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-3 text-sm">
                                     <Calendar className="w-4 h-4 text-gray-400" />

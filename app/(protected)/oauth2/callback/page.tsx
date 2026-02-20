@@ -25,7 +25,7 @@ function OAuth2CallbackContent() {
                 }
 
                 const decoded: any = jwtDecode(token)
-                console.log("Decoded token:", decoded)
+                // console.log("Decoded token:", decoded)
 
                 // ✅ Set token in state first
                 useAuth.setState({
@@ -47,15 +47,15 @@ function OAuth2CallbackContent() {
                         credentials: 'include'
                     })
 
-                    console.log("Profile response status:", profileRes.status)
+                    // console.log("Profile response status:", profileRes.status)
 
                     if (profileRes.ok) {
                         const userData = await profileRes.json()
-                        console.log("User data:", userData)
+                        // console.log("User data:", userData)
                         useAuth.setState({ user: userData })
                     } else {
                         const errData = await profileRes.json()
-                        console.error("Profile fetch error:", errData)
+                        // console.error("Profile fetch error:", errData)
 
                         // Fallback: set basic user info from token
                         useAuth.setState({
@@ -73,7 +73,7 @@ function OAuth2CallbackContent() {
                         })
                     }
                 } catch (fetchErr) {
-                    console.error("Profile fetch threw:", fetchErr)
+                    // console.error("Profile fetch threw:", fetchErr)
                     // Fallback to token data
                     useAuth.setState({
                         user: {
@@ -93,7 +93,7 @@ function OAuth2CallbackContent() {
                 router.replace(returnUrl)
 
             } catch (error) {
-                console.error("OAuth2 callback failed:", error)
+                // console.error("OAuth2 callback failed:", error)
                 router.replace('/login?error=oauth_failed')
             }
         }
